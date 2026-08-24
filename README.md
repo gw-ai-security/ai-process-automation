@@ -1,306 +1,137 @@
 # AI Process Automation Portfolio
 
-A structured portfolio of real-world AI and automation projects focused
-on:
+Portfolio of implemented automation and integration projects focused on **APIs, webhooks, workflow orchestration, persistence, auditability, and bounded AI-assisted processing**.
 
--   REST API integrations
--   Workflow orchestration (n8n, low-code automation)
--   Python-based backend services
--   LLM-powered automation
--   Business process optimization
--   Observability, KPIs, and operational robustness
+> **Evidence principle:** this repository documents what is actually implemented. Planned ideas, simulated integrations, and production deployments are treated as different evidence levels.
 
-This repository demonstrates how AI and automation can be implemented in
-production-like environments --- not as isolated demos, but as
-measurable, secure, and maintainable systems.
+## Recruiter Snapshot
 
-------------------------------------------------------------------------
+| Module | What it demonstrates | Core technologies | Status |
+|---|---|---|---|
+| [`00-rest-api-basics/`](00-rest-api-basics/) | Small REST/API learning exercises | Python / HTTP basics | Learning sandbox |
+| [`01-rest-api-integration-hub/`](01-rest-api-integration-hub/) | Signed webhook intake, validation, transformation, mock system integration, audit/DLQ/KPI handling | FastAPI, PostgreSQL, Docker Compose, n8n, HMAC | Implemented local portfolio project |
+| [`02-ai-workflow-automation-engine/`](02-ai-workflow-automation-engine/) | Webhook-driven operational intake, structured LLM extraction, routing, persistence and workflow metrics | FastAPI, PostgreSQL, n8n, Docker Compose, LLM adapter | Implemented MVP |
 
-## Purpose of This Repository
+The repository currently contains these three modules. Additional automation ideas are not presented here as completed projects.
 
-Modern companies face recurring operational challenges:
+---
 
--   Manual and repetitive processes
--   Disconnected systems and API silos
--   Unstructured data not ready for AI
--   Lack of automation observability
--   Missing performance metrics for automation impact
+## 01 — REST API Integration Hub
 
-This repository contains hands-on implementation projects that address
-these problems using practical, industry-relevant technologies.
+A local, reproducible integration hub for signed webhook intake and downstream automation.
 
-Each project is designed to reflect real business scenarios across:
+Implemented evidence includes:
 
--   Industrial IT environments
--   Startup operations
--   Consulting-driven transformation projects
+- FastAPI-based webhook/API layer
+- HMAC-signed requests using timestamp and signature headers
+- payload validation and transformation
+- mock CRM upsert flow
+- mock Jira/Confluence target handling
+- idempotency and replay-protection logic
+- audit logging
+- Dead Letter Queue / error-path handling
+- KPI aggregation
+- n8n orchestration
+- Docker Compose-based local environment
+- smoke-test scripts for happy and error paths
 
-------------------------------------------------------------------------
+The external systems are simulated. The project demonstrates integration mechanics and operational safeguards without claiming a production third-party deployment.
+
+→ [`01-rest-api-integration-hub/README.md`](01-rest-api-integration-hub/README.md)
+
+---
+
+## 02 — AI Workflow Automation Engine
+
+Webhook-driven MVP for turning unstructured operational intake into structured workflow output.
+
+Implemented flow:
+
+```text
+Operational intake
+      ↓
+FastAPI
+      ↓
+Structured extraction
+      ↓
+Routing logic
+      ↓
+PostgreSQL persistence
+      ↓
+n8n branching
+      ↓
+Mock Jira / Mock Slack targets
+```
+
+Implemented evidence includes:
+
+- `POST /intake`
+- `GET /health`
+- `GET /workflow/{id}`
+- `GET /metrics/summary`
+- mock Jira and Slack endpoints
+- structured extraction of summary, action items, priority and route
+- deterministic mock mode plus OpenAI-compatible adapter mode
+- persistence of workflow state, outputs, events, errors and metrics
+- n8n workflow export
+- illustrative automation-impact metric using configurable manual/automated time assumptions
+- pytest-based test execution
+
+Explicit non-goals in the current MVP:
+
+- production authentication or user accounts
+- real Jira or Slack integration
+- multi-agent runtime
+- production-grade financial ROI claims
+- enterprise deployment architecture
+
+→ [`02-ai-workflow-automation-engine/README.md`](02-ai-workflow-automation-engine/README.md)
+
+---
+
+## Capability Matrix
+
+| Capability | Evidence |
+|---|---|
+| REST API design | FastAPI endpoints in integration and workflow modules |
+| Webhook processing | signed intake and operational intake workflows |
+| Workflow orchestration | n8n |
+| Persistence | PostgreSQL |
+| Containerized local execution | Docker Compose |
+| Security-aware integration | HMAC verification, replay protection, idempotency |
+| Reliability patterns | validation, error handling, DLQ-style handling, smoke tests |
+| Auditability | structured logs / persisted workflow and event records |
+| AI-assisted processing | structured extraction with bounded adapter layer |
+| Operational metrics | KPI aggregation and illustrative automation-impact metrics |
 
 ## Repository Structure
 
-``` text
-Ai-Process-Automation/
-│
-├── 01-rest-api-integration-hub/
-├── 02-ai-workflow-automation-engine/
-├── 03-ai-ready-data-pipeline/
-├── 04-business-process-automation-blueprint/
-├── 05-intelligent-documentation-bot/
-└── 06-automation-impact-dashboard/
+```text
+ai-process-automation/
+├── 00-rest-api-basics/                  # learning exercises
+├── 01-rest-api-integration-hub/         # implemented integration project
+├── 02-ai-workflow-automation-engine/    # implemented automation MVP
+└── README.md
 ```
 
-Each project is self-contained and includes:
+## Scope and Limitations
 
--   Architecture documentation
--   Security considerations
--   Business context
--   Docker-based setup (where applicable)
--   Tests and validation steps
--   KPI definitions
+This is a portfolio and learning repository, not evidence of a production deployment.
 
-------------------------------------------------------------------------
+- external business systems are mocked
+- no real third-party credentials are included
+- local Docker/n8n execution is not equivalent to enterprise hosting
+- AI output is used as bounded workflow assistance, not autonomous authority
+- ROI/time-saved figures in the workflow MVP are illustrative estimates rather than validated business outcomes
 
-# Projects Overview
+## Suggested Review Path
 
-## 01 -- REST API Integration Hub
+For a technical review:
 
-### Problem Addressed
+1. [`01-rest-api-integration-hub/`](01-rest-api-integration-hub/) — integration security, webhook handling, auditability and error paths
+2. [`02-ai-workflow-automation-engine/`](02-ai-workflow-automation-engine/) — structured AI-assisted workflow automation and persistence
+3. [`00-rest-api-basics/`](00-rest-api-basics/) — earlier learning exercises
 
-Disconnected systems and manual data synchronization.
+---
 
-### Demonstrates
-
--   REST API implementation
--   Webhook handling with HMAC verification
--   Idempotency and replay protection
--   n8n orchestration
--   Mock CRM integration
--   Audit logging and Dead Letter Queue (DLQ)
--   KPI tracking for automation success
--   Smoke-tested error paths with mock Jira/Confluence alerts and KPI aggregation via `scripts/`.
-
-### Technologies
-
--   Python (FastAPI)
--   n8n
--   Docker Compose
--   PostgreSQL
--   HMAC authentication
-
-### Business Value
-
-Shows how to build a secure integration layer that is measurable,
-observable, and production-ready.
-
-### Dokumentation
-- Projektinterne Dokumentation im Modul: `01-rest-api-integration-hub/docs/README.md`.
-- Glossar, Change Log und Wartungsanleitung im gleichen Ordner (z. B. `docs/glossary.md`, `docs/06_change_log.md`).
-
-------------------------------------------------------------------------
-
-## 02 -- AI Workflow Automation Engine
-
-### Problem Addressed
-
-Manual startup operations and repetitive internal processes.
-
-### Demonstrates
-
--   Low-code automation (n8n / Make-style)
--   LLM-based summarization agents
--   Cross-functional workflow automation
--   Webhooks and API integrations
--   Automation ROI measurement
-
-### Technologies
-
--   n8n
--   LLM APIs
--   REST APIs
--   Workflow design principles
-
-### Business Value
-
-Illustrates how automation increases operational scalability in lean
-environments.
-
-------------------------------------------------------------------------
-
-## 03 -- AI-Ready Data Preparation Pipeline
-
-### Problem Addressed
-
-Raw data not structured for AI initiatives.
-
-### Demonstrates
-
--   Data cleaning and transformation
--   API ingestion
--   Feature preparation
--   PII-aware processing
--   Pipeline documentation
-
-### Technologies
-
--   Python (Pandas)
--   REST APIs
--   n8n orchestration
--   Structured logging
-
-### Business Value
-
-Bridges data engineering and AI enablement.
-
-------------------------------------------------------------------------
-
-## 04 -- Business Process Automation Blueprint
-
-### Problem Addressed
-
-Unstructured or undocumented business processes.
-
-### Demonstrates
-
--   Process analysis and modeling
--   Automation potential identification
--   Prototype workflow design
--   ROI-based evaluation
-
-### Technologies
-
--   n8n
--   BPMN modeling
--   LLM-based process analysis
-
-### Business Value
-
-Shows consulting-oriented thinking at the intersection of business and
-technology.
-
-------------------------------------------------------------------------
-
-## 05 -- Intelligent Documentation Bot
-
-### Problem Addressed
-
-Lack of structured technical documentation.
-
-### Demonstrates
-
--   Automated documentation generation
--   LLM summarization
--   API-based knowledge base updates
--   Versioning awareness
-
-### Technologies
-
--   n8n
--   Confluence-style API integration
--   LLMs
-
-### Business Value
-
-Improves maintainability and knowledge retention in technical teams.
-
-------------------------------------------------------------------------
-
-## 06 -- Automation Impact Dashboard
-
-### Problem Addressed
-
-Automation initiatives without measurable impact.
-
-### Demonstrates
-
--   KPI tracking
--   Automation success rate measurement
--   Latency tracking
--   Manual rework rate estimation
--   ROI modeling
-
-### Technologies
-
--   Python
--   PostgreSQL
--   Data aggregation
--   Reporting logic
-
-### Business Value
-
-Connects technical automation to business metrics.
-
-------------------------------------------------------------------------
-
-## Core Design Principles
-
-All projects follow consistent engineering standards:
-
--   Security-first webhook validation (HMAC, replay protection)
--   No raw PII storage
--   Structured logging
--   Observability and traceability
--   Error handling and DLQ mechanisms
--   Measurable business impact
-
-This repository is intentionally designed to simulate real-world system
-integration rather than isolated coding exercises.
-
-------------------------------------------------------------------------
-
-## Skills Demonstrated
-
--   API design and integration
--   Workflow automation architecture
--   Backend development (Python)
--   Low-code orchestration (n8n)
--   LLM integration
--   Data preparation for AI
--   KPI and business impact modeling
--   Documentation discipline
--   Security-aware system design
-
-------------------------------------------------------------------------
-
-## Target Context
-
-These projects reflect real-world scenarios typical in:
-
--   Industrial IT environments
--   Startup investment platforms
--   Digital transformation consulting
--   AI & automation initiatives
--   Integration-heavy backend systems
-
-------------------------------------------------------------------------
-
-## How to Use This Repository
-
-Each subproject contains:
-
--   Setup instructions
--   Environment configuration
--   Architecture diagrams
--   Test scripts
--   Demonstration scenarios
-
-Start with:
-
-    01-rest-api-integration-hub/
-
-and follow the Quickstart instructions in its README.
-
-------------------------------------------------------------------------
-
-## Disclaimer
-
-This repository uses mock services and simulated integrations for
-demonstration purposes. No real third-party systems or credentials are
-included.
-
-------------------------------------------------------------------------
-
-## Contact
-
-For collaboration or discussion around AI-driven process automation,
-feel free to connect.
+**Portfolio principle:** implemented capability, simulated integration, planned architecture and production experience are different evidence levels.
