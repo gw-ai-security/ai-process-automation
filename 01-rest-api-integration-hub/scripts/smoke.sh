@@ -1,17 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ -f .env ]]; then
+  set -a
+  source .env
+  set +a
+fi
+: "${WEBHOOK_HMAC_SECRET:?Set WEBHOOK_HMAC_SECRET or create .env}"
+
 echo "Running valid lead flow"
-./scripts/curl_valid.sh
+bash scripts/curl_valid.sh
 
 echo "Checking idempotency (repeat)"
-./scripts/curl_valid.sh
+bash scripts/curl_valid.sh
 
 echo "Simulating bad signature"
-./scripts/curl_bad_sig.sh
+bash scripts/curl_bad_sig.sh
 
 echo "Simulating replay (old timestamp)"
-./scripts/curl_replay.sh
+bash scripts/curl_replay.sh
 
 echo "Sending malformed payload"
-./scripts/curl_invalid_payload.sh
+bash scripts/curl_invalid_payload.sh

@@ -26,6 +26,7 @@ services:
       WEBHOOK_MAX_SKEW_SECONDS: ${WEBHOOK_MAX_SKEW_SECONDS}
       MOCK_CRM_URL: ${MOCK_CRM_URL}
       MOCK_JC_URL: ${MOCK_JC_URL}
+      NODE_FUNCTION_ALLOW_BUILTIN: crypto
       PROCESSOR_URL: http://processor:8000
     volumes:
       - n8n_data:/home/node/.n8n
