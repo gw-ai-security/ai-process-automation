@@ -118,7 +118,7 @@ jobs:
           PY
       - name: Check n8n workflow import
         run: |
-          docker compose run --rm -T n8n n8n import:workflow --input=/workflows/quality-gate.json
+          docker compose run --rm -T n8n import:workflow --input=/workflows/quality-gate.json
       - name: Show diagnostics on failure
         if: failure()
         run: docker compose logs --tail=100
@@ -201,8 +201,8 @@ jobs:
       - name: Check both n8n workflow imports
         run: |
           # No long-running n8n server: import CLI owns migrations exclusively.
-          docker compose run --rm -T n8n n8n import:workflow --input=/workflows/rag-ask.json
-          docker compose run --rm -T n8n n8n import:workflow --input=/workflows/rag-ingest.json
+          docker compose run --rm -T n8n import:workflow --input=/workflows/rag-ask.json
+          docker compose run --rm -T n8n import:workflow --input=/workflows/rag-ingest.json
       - name: Diagnostics on failure
         if: failure()
         run: docker compose logs --tail=120
