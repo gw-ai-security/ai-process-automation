@@ -14,7 +14,8 @@
         "httpMethod": "POST",
         "path": "knowledge-ask",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {},
+        "authentication": "headerAuth"
       }
     },
     {

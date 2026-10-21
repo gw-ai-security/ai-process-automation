@@ -79,7 +79,7 @@ n8n UI: http://127.0.0.1:5680. Import both workflows in `n8n/workflows/`:
 - `rag-ingest.json` — webhook `knowledge-ingest` → API `/documents`.
 - `rag-ask.json` — webhook `knowledge-ask` → API `/ask`.
 
-On the HTTP Request node of **each** workflow, create and assign an **HTTP Header Auth** credential with header name `X-API-Key` and your secret value. The imports are intentionally inactive. Activate only in the local demo after credentials are assigned. n8n also stores execution input in its own database by default; do not send private data.
+On each incoming **Webhook** node, configure **Header Auth** with a separate inbound secret before activation. On the HTTP Request node of **each** workflow, create and assign an **HTTP Header Auth** credential with header name `X-API-Key` and your secret value. The imports are intentionally inactive. Activate only in the local demo after credentials are assigned. n8n also stores execution input in its own database by default; do not send private data.
 
 ## Tests
 

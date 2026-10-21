@@ -127,5 +127,6 @@ def test_workflow_json_contract():
         names = {node["name"] for node in flow["nodes"]}
         assert {"Webhook", "Call knowledge API", "Respond"} <= names
         assert flow["active"] is False
+        assert next(node for node in flow["nodes"] if node["name"] == "Webhook")["parameters"]["authentication"] == "headerAuth"
         assert all(node.get("parameters", {}).get("authentication") == "genericCredentialType"
                    for node in flow["nodes"] if node["name"] == "Call knowledge API")

@@ -14,7 +14,8 @@
         "httpMethod": "POST",
         "path": "knowledge-ingest",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {},
+        "authentication": "headerAuth"
       }
     },
     {
