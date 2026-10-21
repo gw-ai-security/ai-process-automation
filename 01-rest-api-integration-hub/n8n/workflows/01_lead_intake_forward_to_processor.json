@@ -5,7 +5,9 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "lead-intake",
-        "options": {}
+        "options": {},
+        "authentication": "headerAuth",
+        "responseMode": "responseNode"
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
@@ -19,10 +21,11 @@
     },
     {
       "parameters": {
-        "functionCode": "const crypto = require('crypto');\nconst payload = $node['Webhook'].json.body || {};\nconst bodyString = JSON.stringify(payload);\nconst secret = process.env.WEBHOOK_HMAC_SECRET || 'replace-with-strong-secret';\nconst timestamp = Math.floor(Date.now() / 1000).toString();\nconst signingString = `${timestamp}.${bodyString}`;\nconst signature = `sha256=${crypto.createHmac('sha256', secret).update(signingString).digest('hex')}`;\nreturn [{ json: { payload, bodyString, timestamp, signature } }];"
+        "mode": "runOnceForAllItems",
+        "jsCode": "const crypto = require('crypto');\nconst payload = $('Webhook').first().json.body || {};\nconst bodyString = JSON.stringify(payload);\nconst secret = process.env.WEBHOOK_HMAC_SECRET;\nif (!secret) throw new Error('WEBHOOK_HMAC_SECRET is required');\nconst timestamp = Math.floor(Date.now() / 1000).toString();\nconst signingString = `${timestamp}.${bodyString}`;\nconst signature = `sha256=${crypto.createHmac('sha256', secret).update(signingString).digest('hex')}`;\nreturn [{ json: { payload, bodyString, timestamp, signature } }];"
       },
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         200,
         0
@@ -73,11 +76,12 @@
     },
     {
       "parameters": {
-        "responseMode": "response",
-        "responseData": "={{$node['Processor Request'].json}}"
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
       },
-      "type": "n8n-nodes-base.webhook-response",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
       "position": [
         600,
         -120
@@ -89,11 +93,10 @@
       "parameters": {
         "method": "POST",
         "url": "http://mock-jira-confluence:9002/log",
-        "jsonParameters": true,
-        "options": {
-          "bodyContentType": "json"
-        },
-        "jsonBody": "={\"run_id\": $node['Processor Request'].json['run_id'] || $node['Webhook'].json['body']['idempotency_key'], \"statusCode\": $node['Processor Request'].json['statusCode'], \"alert\": ($node['Processor Request'].json['statusCode'] >= 400), \"response\": $node['Processor Request'].json, \"payload\": $node['Webhook'].json['body']}"
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"run_id\": $node[\"Processor Request\"].json[\"body\"]?.[\"run_id\"] || \"unknown\", \"status\": $node[\"Processor Request\"].json[\"body\"]?.[\"status\"] || \"unknown\", \"alert\": false } }}",
+        "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,

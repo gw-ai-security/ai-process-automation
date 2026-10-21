@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -17,18 +17,16 @@ services:
       retries: 20
 
   n8n:
-    image: n8nio/n8n:latest
+    image: n8nio/n8n:2.6.4
     ports:
-      - "5678:5678"
+      - "127.0.0.1:5678:5678"
     environment:
-      N8N_BASIC_AUTH_ACTIVE: ${N8N_BASIC_AUTH_ACTIVE}
-      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER}
-      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD}
       WEBHOOK_URL: ${WEBHOOK_URL}
       WEBHOOK_HMAC_SECRET: ${WEBHOOK_HMAC_SECRET}
       WEBHOOK_MAX_SKEW_SECONDS: ${WEBHOOK_MAX_SKEW_SECONDS}
       MOCK_CRM_URL: ${MOCK_CRM_URL}
       MOCK_JC_URL: ${MOCK_JC_URL}
+      NODE_FUNCTION_ALLOW_BUILTIN: crypto
       PROCESSOR_URL: http://processor:8000
     volumes:
       - n8n_data:/home/node/.n8n
@@ -41,7 +39,7 @@ services:
   processor:
     build: ./processor
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       DATABASE_URL: ${DATABASE_URL}
       WEBHOOK_HMAC_SECRET: ${WEBHOOK_HMAC_SECRET}
@@ -56,7 +54,7 @@ services:
   mock-crm:
     build: ./mock-crm
     ports:
-      - "9001:9001"
+      - "127.0.0.1:9001:9001"
     environment:
       LOG_LEVEL: info
     depends_on:
@@ -66,7 +64,7 @@ services:
   mock-jira-confluence:
     build: ./mock-jira-confluence
     ports:
-      - "9002:9002"
+      - "127.0.0.1:9002:9002"
     volumes:
       - ./alerts:/alerts
     environment:

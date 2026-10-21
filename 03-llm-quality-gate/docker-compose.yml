@@ -1,0 +1,26 @@
+services:
+  gate:
+    build: .
+    env_file: .env
+    ports:
+      - "127.0.0.1:8030:8000"
+    volumes:
+      - gate_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  n8n:
+    image: n8nio/n8n:2.6.4
+    ports:
+      - "127.0.0.1:5679:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/workflows:ro
+    depends_on:
+      gate:
+        condition: service_healthy
+volumes:
+  gate_data:
+  n8n_data:

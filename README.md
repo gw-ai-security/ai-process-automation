@@ -1,139 +1,60 @@
-# AI Process Automation Portfolio
+# AI Process Automation — Engineering Portfolio
 
-Implemented automation and integration projects focused on **APIs, webhooks, workflow orchestration, persistence, auditability, reliability patterns and bounded AI-assisted processing**.
+**Three bounded projects demonstrating integration engineering, AI-assisted workflow automation and pre-dispatch quality controls.** All use synthetic data and local or mocked business systems. No enterprise production deployment or measured commercial ROI is claimed.
 
-> **10-second summary:** the strongest modules are a signed webhook integration hub and a workflow automation MVP. Both are local portfolio systems with explicit failure handling and scope boundaries; mocked external systems and illustrative ROI estimates are not presented as production evidence.
+## Recruiter overview
 
-## Recruiter Snapshot
+| Project | Business problem | Delivered engineering evidence | Stack |
+| --- | --- | --- | --- |
+| **[01 · REST API Integration Hub](01-rest-api-integration-hub/README.md)** | Duplicate, unsafe and untraceable lead integrations | HMAC-signed lead API, timestamp check, run idempotency, mock CRM, audit metadata, failure/DLQ records and KPI counters | Python, FastAPI, PostgreSQL, Docker Compose, n8n export |
+| **[02 · AI Workflow Automation Engine](02-ai-workflow-automation-engine/README.md)** | Manual classification and routing of unstructured operational requests | Structured extraction, priority routing, mock Jira/Slack, persisted workflow state, metrics and deterministic offline LLM mock | Python, FastAPI, PostgreSQL, n8n, OpenAI-compatible adapter |
+| **[03 · LLM Output Quality Gate](03-llm-quality-gate/README.md)** | AI-generated actions reaching business tools without a decision gate | Strict output contract, sensitive-content flags, threshold, human approve/reject flow, fail-closed mock dispatch, idempotency and audit | Python, FastAPI, SQLite, pytest, Docker Compose, n8n export |
 
-| Module | What it demonstrates | Core technologies | Status |
-|---|---|---|---|
-| [`01-rest-api-integration-hub/`](01-rest-api-integration-hub/) | Signed webhook intake, transformation, idempotency, replay protection, mock system integration, audit and DLQ-style handling | FastAPI, PostgreSQL, Docker Compose, n8n, HMAC | **Implemented local portfolio project** |
-| [`02-ai-workflow-automation-engine/`](02-ai-workflow-automation-engine/) | Operational intake, structured AI-assisted extraction, routing, persistence and workflow metrics | FastAPI, PostgreSQL, n8n, Docker Compose, LLM adapter | **Implemented MVP** |
-| [`00-rest-api-basics/`](00-rest-api-basics/) | Earlier REST/API exercises | Python / HTTP basics | Learning sandbox |
+[**Engineering review, test evidence and remaining limitations**](docs/REVIEW_2026-10-21.md) · [**Market evidence and project choice**](docs/MARKET_EVIDENCE_2026-10.md)
 
-## 01 — REST API Integration Hub
+### Recommended 5-minute code review
 
-A local integration hub for signed webhook intake and downstream automation.
+1. [Project 03 API](03-llm-quality-gate/app/main.py) and [tests](03-llm-quality-gate/tests/test_api.py) — deterministic gates *before* simulated business effects.
+2. [Project 01 processor](01-rest-api-integration-hub/processor/app/main.py) — HMAC validation, sanitisation, run state and DLQ patterns.
+3. [Project 02 LLM adapter](02-ai-workflow-automation-engine/app/services/llm_service.py) — mock/model boundary, extraction and routing.
 
-```text
-Signed webhook
-      ↓
-FastAPI validation
-      ↓
-HMAC / timestamp checks
-      ↓
-Idempotency + replay protection
-      ↓
-Transformation
-      ↓
-PostgreSQL / audit / DLQ-style handling
-      ↓
-n8n orchestration
-      ↓
-Mock CRM + mock Jira/Confluence targets
-```
-
-### Implemented evidence
-
-- FastAPI webhook/API layer
-- HMAC-signed requests using timestamp and signature headers
-- payload validation and transformation
-- idempotency and replay-protection logic
-- audit logging
-- Dead Letter Queue / error-path handling
-- KPI aggregation
-- n8n orchestration
-- Docker Compose local environment
-- smoke tests for happy and error paths
-
-**Boundary:** downstream business systems are simulated. The project demonstrates integration mechanics and safeguards, not a real enterprise deployment.
-
-→ **[Open project](01-rest-api-integration-hub/README.md)**
-
----
-
-## 02 — AI Workflow Automation Engine
-
-A webhook-driven MVP that turns unstructured operational intake into structured workflow state.
+## Architecture: separation of concerns
 
 ```text
-Operational intake
-      ↓
-FastAPI
-      ↓
-Structured extraction
-      ↓
-Routing logic
-      ↓
-PostgreSQL persistence
-      ↓
-n8n branching
-      ↓
-Mock Jira / Mock Slack targets
+01  Signed intake -> validation -> mock CRM -> audit / DLQ / KPI
+02  Operational text -> extraction -> routing -> mock actions / KPI
+03  Structured model output -> gate -> allow OR human review -> mock dispatch
 ```
 
-### Implemented evidence
+These modules are **standalone**, not a single distributed production pipeline. The Project 03 schema deliberately matches fields used by Project 02, but wiring them together is not claimed.
 
-- `POST /intake`
-- `GET /health`
-- `GET /workflow/{id}`
-- `GET /metrics/summary`
-- mock Jira and Slack endpoints
-- structured extraction of summary, action items, priority and route
-- deterministic mock mode plus OpenAI-compatible adapter mode
-- persisted workflow state, outputs, events, errors and metrics
-- n8n workflow export
-- pytest-based test execution
+## Local validation
 
-**Boundary:** the automation-impact metric uses configurable manual/automated time assumptions. It is an illustrative model, not validated business ROI.
+Run each project's test suite independently (Python 3.12 recommended):
 
-→ **[Open project](02-ai-workflow-automation-engine/README.md)**
+```bash
+cd 01-rest-api-integration-hub
+pip install -r processor/requirements.txt pytest
+python -m pytest -q
 
-## Technical Stack by System Role
+cd ../02-ai-workflow-automation-engine
+pip install -r requirements.txt
+python -m pytest -q
 
-| Role | Evidence |
-|---|---|
-| **Connect / Intake** | REST APIs and webhooks |
-| **Buffer / Workflow state** | persisted workflow/event records; no dedicated message broker is claimed in these modules |
-| **Processing** | validation, transformation, routing and bounded AI extraction |
-| **Storage** | PostgreSQL |
-| **Orchestration** | n8n |
-| **Security** | HMAC verification, timestamps, replay protection, idempotency |
-| **Reliability** | validation, explicit error paths, DLQ-style handling, smoke tests |
-| **Auditability** | audit logs plus persisted workflow/event state |
-| **AI boundary** | adapter-based structured extraction; AI is workflow assistance, not autonomous authority |
-| **Infrastructure** | Docker Compose |
+cd ../03-llm-quality-gate
+pip install -r requirements.txt
+python -m pytest -q
+```
 
-## Engineering Lessons and Failure Modes
+GitHub Actions [portfolio tests](.github/workflows/ci.yml) runs each module plus JSON/Python/shell checks and Docker Compose **syntax validation** on push/PR. A passing unit suite or syntax check does not prove that a live n8n instance, Docker image or external integration ran.
 
-The useful engineering work in these projects is not simply calling an API or an LLM.
+For individual Docker demos, start from the project directory: copy `.env.example` to `.env`, replace secret placeholders, then run `docker compose up --build`. Projects 01/02 both use ports 5678 and 8000 and should not be started simultaneously without changing ports. Project 03 defaults to 5679 and 8030. See individual READMEs for prerequisites.
 
-- **Webhook authenticity must be checked before business processing.** Signature validation and timestamp handling belong at the trust boundary.
-- **Retries create duplicate risk.** Idempotency and replay protection are necessary when the same event may arrive more than once.
-- **Failure needs a destination.** Validation or downstream errors should remain inspectable instead of disappearing into logs only.
-- **Workflow state must be persisted.** A successful HTTP response is not enough to explain what happened later.
-- **External integration should be separated from internal logic.** Mock adapters make the portfolio implementation reproducible while keeping the boundary explicit.
-- **Probabilistic AI output needs deterministic surrounding contracts.** Structured extraction is bounded by routing and persistence logic rather than being treated as a complete autonomous workflow.
-- **Estimated time savings are assumptions until measured in a real process.** The repository keeps that distinction explicit.
+## Scope, safety and honesty
 
-## Scope and Limitations
+- **Real:** code, database and workflow definitions, unit tests, deterministic branch decisions and mock integrations.
+- **Simulated:** CRM/Jira/Slack downstream calls, business dispatch and LLM outputs in default mock mode.
+- **Not demonstrated:** real business KPIs/ROI, penetration testing, audited enterprise IAM, complete LLM security, model quality benchmarks or production rollout.
+- **Important:** Project 01 n8n bridge requires a configured Header Auth credential before activation; Project 03 n8n nodes require the separately configured Header Auth credential. Never commit `.env` secrets.
 
-This repository does **not** claim:
-
-- production authentication or enterprise IAM
-- real Jira, Slack, CRM or Confluence deployment
-- enterprise hosting or production observability
-- multi-agent autonomy
-- validated financial ROI
-- production operational ownership
-
-## Suggested Review Path
-
-1. [`01-rest-api-integration-hub/`](01-rest-api-integration-hub/) — strongest evidence for integration security, reliability and failure handling
-2. [`02-ai-workflow-automation-engine/`](02-ai-workflow-automation-engine/) — structured AI-assisted workflow state and persistence
-3. [`00-rest-api-basics/`](00-rest-api-basics/) — earlier exercises only
-
-## TL;DR
-
-This repository demonstrates how I approach automation as an engineering system: **trust boundary → validation → idempotency/replay handling → transformation → persistence → orchestration → explicit failure paths → auditability**. AI is added only inside that controlled workflow rather than used as a substitute for system design.
+License: [LICENSE](LICENSE).

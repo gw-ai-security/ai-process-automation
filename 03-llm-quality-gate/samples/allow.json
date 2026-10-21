@@ -1,0 +1,13 @@
+{
+  "event_id": "sample-allow-001",
+  "prompt_version": "v1",
+  "output": {
+    "summary": "Customer reports a service outage requiring support triage.",
+    "action_items": [
+      "Open a support ticket and assign an owner."
+    ],
+    "priority": "high",
+    "route_to": "support",
+    "confidence": 0.93
+  }
+}

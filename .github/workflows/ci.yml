@@ -1,0 +1,159 @@
+name: Portfolio tests
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [01-rest-api-integration-hub, 02-ai-workflow-automation-engine, 03-llm-quality-gate]
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ "${{ matrix.module }}" = '01-rest-api-integration-hub' ]; then
+            pip install -r processor/requirements.txt pytest==8.4.1
+          else
+            pip install -r requirements.txt
+          fi
+      - name: Test
+        run: python -m pytest -q
+      - name: Compose syntax
+        run: |
+          cp .env.example .env
+          docker compose config -q
+
+  repository-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate JSON, Python syntax and shell scripts
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          count=0
+          for p in Path('.').rglob('*.json'):
+              if '.git' in p.parts:
+                  continue
+              json.loads(p.read_text(encoding='utf-8'))
+              count += 1
+          print(f'{count} JSON files parsed')
+          PY
+          python -m compileall -q 00-rest-api-basics 01-rest-api-integration-hub 02-ai-workflow-automation-engine 03-llm-quality-gate
+          find 01-rest-api-integration-hub/scripts -name '*.sh' -print0 | xargs -0 -r -n1 bash -n
+
+  docker-smoke-project03:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: 03-llm-quality-gate
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create local-only test key
+        run: |
+          cp .env.example .env
+          python - <<'PY'
+          from pathlib import Path
+          import secrets
+          p = Path('.env')
+          p.write_text(p.read_text().replace('GATE_API_KEY=change-me', 'GATE_API_KEY=' + secrets.token_urlsafe(32)))
+          PY
+      - name: Start API and n8n containers
+        run: |
+          docker compose up -d --build gate n8n
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8030/health; then break; fi
+            sleep 3
+          done
+          curl -fsS http://127.0.0.1:8030/health
+      - name: Test HTTP API including review gate
+        run: |
+          python - <<'PY'
+          import json
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+          key = dict(line.strip().split('=', 1) for line in Path('.env').read_text().splitlines() if '=' in line)['GATE_API_KEY']
+          base = 'http://127.0.0.1:8030'
+          def call(method, path, body=None):
+              data = json.dumps(body).encode() if body is not None else None
+              request = urllib.request.Request(base + path, data=data, method=method, headers={'X-API-Key': key, 'Content-Type': 'application/json'})
+              with urllib.request.urlopen(request, timeout=10) as response:
+                  return json.load(response)
+          normal = json.loads(Path('samples/allow.json').read_text())
+          assert call('POST', '/evaluate', normal)['status'] == 'allow'
+          assert call('POST', '/dispatch/sample-allow-001')['status'] == 'dispatched'
+          assert call('POST', '/dispatch/sample-allow-001')['status'] == 'duplicate'
+          normal['event_id'] = 'ci-review-001'
+          normal['output']['confidence'] = 0.3
+          assert call('POST', '/evaluate', normal)['status'] == 'review'
+          try:
+              call('POST', '/dispatch/ci-review-001')
+              raise AssertionError('review gate bypass')
+          except urllib.error.HTTPError as e:
+              assert e.code == 409
+          assert call('POST', '/reviews/ci-review-001', {'action': 'approve'})['status'] == 'approved'
+          assert call('POST', '/dispatch/ci-review-001')['status'] == 'dispatched'
+          metrics = call('GET', '/metrics')
+          assert metrics['evaluations'] == 2 and metrics['flagged_for_review'] == 1
+          print('Project 03 container smoke PASS:', metrics)
+          PY
+      - name: Check n8n workflow import
+        run: docker compose exec -T n8n n8n import:workflow --input=/workflows/quality-gate.json
+      - name: Show diagnostics on failure
+        if: failure()
+        run: docker compose logs --tail=100
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v
+
+  docker-smoke-project01:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: 01-rest-api-integration-hub
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start integration API and mocks
+        run: |
+          cp .env.example .env
+          docker compose up -d --build postgres mock-crm processor
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8000/health; then break; fi
+            sleep 3
+          done
+          curl -fsS http://127.0.0.1:8000/health
+      - name: Exercise signed lead and verify database state
+        run: |
+          set -a
+          source .env
+          set +a
+          bash scripts/curl_valid.sh > /tmp/lead-response.txt
+          grep -q 'HTTP/1.1 200 OK' /tmp/lead-response.txt
+          docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "select status from runs where idempotency_key='lead-valid-001'" | grep -q '^processed$'
+          docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "select processed_count from kpi_daily where day=current_date" | grep -q '^1$'
+      - name: Show diagnostics on failure
+        if: failure()
+        run: docker compose logs --tail=100
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v
