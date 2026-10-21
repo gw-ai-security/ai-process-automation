@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [01-rest-api-integration-hub, 02-ai-workflow-automation-engine, 03-llm-quality-gate]
+        module: [01-rest-api-integration-hub, 02-ai-workflow-automation-engine, 03-llm-quality-gate, 04-rag-knowledge-hub]
     defaults:
       run:
         working-directory: ${{ matrix.module }}
@@ -56,7 +56,7 @@ jobs:
               count += 1
           print(f'{count} JSON files parsed')
           PY
-          python -m compileall -q 00-rest-api-basics 01-rest-api-integration-hub 02-ai-workflow-automation-engine 03-llm-quality-gate
+          python -m compileall -q 00-rest-api-basics 01-rest-api-integration-hub 02-ai-workflow-automation-engine 03-llm-quality-gate 04-rag-knowledge-hub
           find 01-rest-api-integration-hub/scripts -name '*.sh' -print0 | xargs -0 -r -n1 bash -n
 
   docker-smoke-project03:
@@ -76,9 +76,9 @@ jobs:
           p = Path('.env')
           p.write_text(p.read_text().replace('GATE_API_KEY=change-me', 'GATE_API_KEY=' + secrets.token_urlsafe(32)))
           PY
-      - name: Start API and n8n containers
+      - name: Start API container
         run: |
-          docker compose up -d --build gate n8n
+          docker compose up -d --build gate
           for i in $(seq 1 40); do
             if curl -fsS http://127.0.0.1:8030/health; then break; fi
             sleep 3
@@ -117,7 +117,8 @@ jobs:
           print('Project 03 container smoke PASS:', metrics)
           PY
       - name: Check n8n workflow import
-        run: docker compose exec -T n8n n8n import:workflow --input=/workflows/quality-gate.json
+        run: |
+          docker compose run --rm -T n8n import:workflow --input=/workflows/quality-gate.json
       - name: Show diagnostics on failure
         if: failure()
         run: docker compose logs --tail=100
@@ -155,5 +156,56 @@ jobs:
         if: failure()
         run: docker compose logs --tail=100
       - name: Stop containers
+        if: always()
+        run: docker compose down -v
+
+  docker-smoke-project04:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: 04-rag-knowledge-hub
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate local-only credentials
+        run: |
+          cp .env.example .env
+          python - <<'PY'
+          from pathlib import Path
+          import secrets
+          p = Path('.env')
+          raw = p.read_text()
+          pw = secrets.token_urlsafe(20)
+          raw = raw.replace('replace-with-local-password', pw)
+          raw = raw.replace('replace-with-long-random-api-key', secrets.token_urlsafe(30))
+          p.write_text(raw)
+          PY
+      - name: Start real pgvector database and FastAPI
+        run: |
+          docker compose up -d --build db api
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:8040/health; then break; fi
+            sleep 3
+          done
+          curl -fsS http://127.0.0.1:8040/health
+          docker compose exec -T db psql -U rag_user -d rag_knowledge -Atc "SELECT extname FROM pg_extension WHERE extname='vector'" | grep -q '^vector$'
+      - name: Test retrieval evaluation and database idempotency
+        run: |
+          set -a
+          source .env
+          set +a
+          python scripts/evaluate.py
+          python scripts/evaluate.py
+          docker compose exec -T db psql -U rag_user -d rag_knowledge -Atc "SELECT COUNT(*) FROM documents" | grep -q '^3$'
+          docker compose exec -T db psql -U rag_user -d rag_knowledge -Atc "SELECT COUNT(*) FROM chunks" | grep -q '^3$'
+      - name: Check both n8n workflow imports
+        run: |
+          # No long-running n8n server: import CLI owns migrations exclusively.
+          docker compose run --rm -T n8n import:workflow --input=/workflows/rag-ask.json
+          docker compose run --rm -T n8n import:workflow --input=/workflows/rag-ingest.json
+      - name: Diagnostics on failure
+        if: failure()
+        run: docker compose logs --tail=120
+      - name: Tear down local stack
         if: always()
         run: docker compose down -v

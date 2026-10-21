@@ -1,0 +1,17 @@
+[
+  {
+    "doc_id": "incident-response",
+    "title": "Incident Escalation Runbook",
+    "text": "When a critical incident occurs, create a support ticket immediately. Notify the on-call engineer within fifteen minutes. If the critical incident is unresolved after thirty minutes, escalate to the incident commander. Record the incident ID and timestamps in the ticket. Do not include credentials or secret access tokens in incident records."
+  },
+  {
+    "doc_id": "release-rollback",
+    "title": "Deployment Rollback Runbook",
+    "text": "After a failed deployment health check, stop the release process. The release owner should revert the application to the last known good version. Verify the application health endpoint after rollback. Document the rollback reason and change identifier. Resume deployments only after the root cause has been reviewed."
+  },
+  {
+    "doc_id": "access-request",
+    "title": "Access Request Policy",
+    "text": "Every access request must specify the business justification and target resource. The requester's line manager must approve the request before access is provisioned. Apply the principle of least privilege and time-limited access where possible. Record approval in the access ticket and review expired permissions regularly."
+  }
+]
