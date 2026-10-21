@@ -43,12 +43,10 @@ def hash_email(email: str) -> str:
 
 
 def sanitize_payload(payload: Dict[str, Any], email_hash: Optional[str]) -> Dict[str, Any]:
-    sanitized = payload.copy()
-    email = sanitized.pop("email", None)
-    if email:
-        sanitized["email_masked"] = mask_email(email)
-    sanitized["email_hash"] = email_hash
-    return sanitized
+    # Allowlist only: user-provided name, note and nested fields may contain PII.
+    email = payload.get("email")
+    return {"email_masked": mask_email(email) if isinstance(email, str) and email else None,
+            "email_hash": email_hash}
 
 
 def get_mock_crm_url() -> str:
@@ -137,7 +135,11 @@ async def webhook_lead(
     except json.JSONDecodeError:
         raise HTTPException(status_code=422, detail="Invalid JSON payload")
 
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=422, detail="Expected JSON object")
     email = body.get("email", "")
+    if email and not isinstance(email, str):
+        raise HTTPException(status_code=422, detail="Email must be a string")
     email_hash = hash_email(email) if email else None
     sanitized_body = sanitize_payload(body, email_hash)
 
@@ -219,10 +221,20 @@ async def webhook_lead(
         if x_fail_after_accept == "1":
             raise RuntimeError("forced_failure_after_accept")
 
-        return {"status": "accepted", "run_id": str(run_id)}
+        with psycopg.connect(get_db_url()) as conn:
+            with conn.cursor() as cur:
+                cur.execute("update runs set status = 'processed' where run_id = %s", (run_id,))
+                cur.execute("""
+                    insert into kpi_daily (day, received_count, processed_count)
+                    values (current_date, 1, 1)
+                    on conflict (day) do update set
+                      received_count = kpi_daily.received_count + 1,
+                      processed_count = kpi_daily.processed_count + 1
+                """)
+        return {"status": "processed", "run_id": str(run_id)}
 
     except Exception as e:
-        logger.error(f"Processing failed: {e}", exc_info=True)
+        logger.error("Processing failed: %s", type(e).__name__)
         try:
             with psycopg.connect(get_db_url()) as conn:
                 conn.autocommit = True
@@ -254,13 +266,14 @@ async def webhook_lead(
                         ),
                     )
 
-                    try:
-                        cur.execute(
-                            "update runs set status = %s where run_id = %s",
-                            ("failed", run_id),
-                        )
-                    except Exception:
-                        pass
+                    cur.execute("update runs set status = 'failed' where run_id = %s", (run_id,))
+                    cur.execute("""
+                        insert into kpi_daily (day, received_count, failed_count)
+                        values (current_date, 1, 1)
+                        on conflict (day) do update set
+                          received_count = kpi_daily.received_count + 1,
+                          failed_count = kpi_daily.failed_count + 1
+                    """)
         except Exception:
             pass
 

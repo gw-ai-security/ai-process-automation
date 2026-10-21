@@ -1,39 +1,44 @@
-########################################
-# OS Generated Files
-########################################
+# OS/editor
 .DS_Store
 Thumbs.db
 Desktop.ini
-$RECYCLE.BIN/
-
-########################################
-# Editor / IDE (global only)
-########################################
 .vscode/
 .idea/
 *.iml
 
-########################################
-# Logs (only root-level logs)
-########################################
+# Python/test/build artifacts (at any directory depth)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+
+# Generated state / local credentials
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+*.key
+*.pem
+secrets/
+credentials/
+**/data/*.db
+**/*.sqlite3
+**/alerts/
+**/mock_payloads/
 *.log
 *.tmp
 
-########################################
-# Environment / Secrets (root only)
-########################################
-.env
-.env.*
-*.env
-*.key
-*.pem
-*.crt
-secrets/
-credentials/
-
-########################################
-# Archive Artifacts
-########################################
+# Archive outputs
 *.zip
 *.tar
 *.gz

@@ -5,7 +5,8 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "lead-intake",
-        "options": {}
+        "options": {},
+        "authentication": "headerAuth"
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
@@ -19,7 +20,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const crypto = require('crypto');\nconst payload = $node['Webhook'].json.body || {};\nconst bodyString = JSON.stringify(payload);\nconst secret = process.env.WEBHOOK_HMAC_SECRET || 'replace-with-strong-secret';\nconst timestamp = Math.floor(Date.now() / 1000).toString();\nconst signingString = `${timestamp}.${bodyString}`;\nconst signature = `sha256=${crypto.createHmac('sha256', secret).update(signingString).digest('hex')}`;\nreturn [{ json: { payload, bodyString, timestamp, signature } }];"
+        "functionCode": "const crypto = require('crypto');\nconst payload = $node['Webhook'].json.body || {};\nconst bodyString = JSON.stringify(payload);\nconst secret = process.env.WEBHOOK_HMAC_SECRET;\nif (!secret) throw new Error('WEBHOOK_HMAC_SECRET is required');\nconst timestamp = Math.floor(Date.now() / 1000).toString();\nconst signingString = `${timestamp}.${bodyString}`;\nconst signature = `sha256=${crypto.createHmac('sha256', secret).update(signingString).digest('hex')}`;\nreturn [{ json: { payload, bodyString, timestamp, signature } }];"
       },
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
@@ -93,7 +94,7 @@
         "options": {
           "bodyContentType": "json"
         },
-        "jsonBody": "={\"run_id\": $node['Processor Request'].json['run_id'] || $node['Webhook'].json['body']['idempotency_key'], \"statusCode\": $node['Processor Request'].json['statusCode'], \"alert\": ($node['Processor Request'].json['statusCode'] >= 400), \"response\": $node['Processor Request'].json, \"payload\": $node['Webhook'].json['body']}"
+        "jsonBody": "={{ { \"run_id\": $node[\"Processor Request\"].json[\"run_id\"] || \"unknown\", \"status\": $node[\"Processor Request\"].json[\"status\"] || \"unknown\", \"alert\": false } }}"
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
