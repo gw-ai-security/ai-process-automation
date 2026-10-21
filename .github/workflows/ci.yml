@@ -1,0 +1,60 @@
+name: Portfolio tests
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [01-rest-api-integration-hub, 02-ai-workflow-automation-engine, 03-llm-quality-gate]
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ "${{ matrix.module }}" = '01-rest-api-integration-hub' ]; then
+            pip install -r processor/requirements.txt pytest==8.4.1
+          else
+            pip install -r requirements.txt
+          fi
+      - name: Test
+        run: python -m pytest -q
+      - name: Compose syntax
+        run: |
+          cp .env.example .env
+          docker compose config -q
+
+  repository-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate JSON, Python syntax and shell scripts
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          count=0
+          for p in Path('.').rglob('*.json'):
+              if '.git' in p.parts:
+                  continue
+              json.loads(p.read_text(encoding='utf-8'))
+              count += 1
+          print(f'{count} JSON files parsed')
+          PY
+          python -m compileall -q 00-rest-api-basics 01-rest-api-integration-hub 02-ai-workflow-automation-engine 03-llm-quality-gate
+          find 01-rest-api-integration-hub/scripts -name '*.sh' -print0 | xargs -0 -r -n1 bash -n

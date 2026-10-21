@@ -88,3 +88,18 @@ def test_n8n_contract():
     names = {node["name"] for node in workflow["nodes"]}
     assert {"Webhook", "Evaluate quality", "Allowed?", "Mock dispatch", "Manual review required"} <= names
     assert workflow["active"] is False
+
+
+def test_no_auth_when_server_key_is_placeholder(client, monkeypatch):
+    monkeypatch.setenv("GATE_API_KEY", "change-me")
+    assert client.post("/evaluate", headers={"X-API-Key": "change-me"}, json=payload()).status_code == 503
+
+
+def test_review_rate_counts_events_not_retries(client):
+    weak = payload(confidence=0.1)
+    assert request(client, "POST", "/evaluate", json=weak).status_code == 200
+    assert request(client, "POST", "/evaluate", json=weak).status_code == 200
+    m = request(client, "GET", "/metrics").json()
+    assert m["evaluations"] == 1
+    assert m["flagged_for_review"] == 1
+    assert m["review_rate"] == 1.0
