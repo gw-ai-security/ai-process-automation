@@ -106,3 +106,19 @@ pytest
 - mock mode uses deterministic classification heuristics
 - ROI is an illustrative estimate, not a validated financial claim
 - n8n workflow is MVP-level and uses mock targets
+
+
+## Review updates (October 2026)
+
+The missing `.env.example` was restored. Keep `LLM_MODE=mock` for a deterministic offline demonstration; real OpenAI-compatible calls require an API key and are not covered by mock-only tests. Docker Compose now binds published ports to `127.0.0.1`. Authentication, real integrations and measured savings are outside this MVP.
+
+Verification:
+
+```bash
+pip install -r requirements.txt
+python -m pytest -q
+cp .env.example .env
+docker compose config -q
+```
+
+See the [portfolio engineering review](../docs/REVIEW_2026-10-21.md) for verified tests and remaining risks.
