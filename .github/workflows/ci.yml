@@ -56,8 +56,33 @@ jobs:
               count += 1
           print(f'{count} JSON files parsed')
           PY
-          python -m compileall -q 00-rest-api-basics 01-rest-api-integration-hub 02-ai-workflow-automation-engine 03-llm-quality-gate 04-rag-knowledge-hub
+          python -m compileall -q 00-rest-api-basics 01-rest-api-integration-hub 02-ai-workflow-automation-engine 03-llm-quality-gate 04-rag-knowledge-hub 05-sme-automation-opportunity-screen
           find 01-rest-api-integration-hub/scripts -name '*.sh' -print0 | xargs -0 -r -n1 bash -n
+
+  sme-opportunity-screener:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 05-sme-automation-opportunity-screen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Synthetic demo and expected triage
+        run: |
+          python screener.py --input samples/synthetic_opportunities.csv > /tmp/opportunity-screen.json
+          python - <<'PY'
+          import json
+          result = json.load(open('/tmp/opportunity-screen.json', encoding='utf-8'))
+          rows = {r['opportunity_id']: r for r in result['opportunities']}
+          assert len(rows) == 4
+          assert rows['SYN-001']['disposition'] == 'candidate_for_discovery'
+          assert rows['SYN-003']['disposition'] == 'needs_human_review'
+          assert rows['SYN-004']['disposition'] == 'weak_economics'
+          PY
 
   docker-smoke-project03:
     runs-on: ubuntu-latest
