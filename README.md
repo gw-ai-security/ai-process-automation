@@ -1,6 +1,6 @@
 # AI Process Automation — Engineering Portfolio
 
-**Four bounded projects demonstrating integration engineering, AI-assisted workflows, AI quality controls and source-grounded document retrieval.** All use synthetic data and local or mocked business systems. No enterprise production deployment or measured commercial ROI is claimed.
+**Five bounded projects demonstrating integration engineering, AI-assisted workflows, AI quality controls, source-grounded document retrieval and SME automation opportunity screening.** All use synthetic data and local or mocked business systems. No enterprise production deployment or measured commercial ROI is claimed.
 
 ## Recruiter overview
 
@@ -11,6 +11,8 @@
 | **[03 · LLM Output Quality Gate](03-llm-quality-gate/README.md)** | AI-generated actions reaching business tools without a decision gate | Strict output contract, sensitive-content flags, threshold, human approve/reject flow, fail-closed mock dispatch, idempotency and audit | Python, FastAPI, SQLite, pytest, Docker Compose, n8n export |
 | **[04 · Evidence-First RAG Knowledge Hub](04-rag-knowledge-hub/README.md)** | Operations documentation is slow to retrieve and hard to cite | Document chunking, versioned embeddings, pgvector retrieval, source attribution, abstention and a synthetic evaluation dataset | Python, FastAPI, PostgreSQL/pgvector, Docker Compose, n8n exports |
 
+| **[05 · SME Automation Opportunity Screener](05-sme-automation-opportunity-screen/README.md)** | Choosing business processes to investigate before automating them | Deterministic model of hypothetical time/cost assumptions, simple payback, risk/approval gates and nine unit tests | Python, CSV, Decimal, unittest |
+
 [**Engineering review, test evidence and remaining limitations**](docs/REVIEW_2026-10-21.md) · [**Market evidence and project choice**](docs/MARKET_EVIDENCE_2026-10.md)
 
 ### Recommended 5-minute code review
@@ -19,6 +21,7 @@
 2. [Project 01 processor](01-rest-api-integration-hub/processor/app/main.py) — HMAC validation, sanitisation, run state and DLQ patterns.
 3. [Project 04 retrieval API](04-rag-knowledge-hub/app/main.py) and [benchmark](04-rag-knowledge-hub/scripts/evaluate.py) — chunking, vector search, source-grounded output and abstention.
 4. [Project 02 LLM adapter](02-ai-workflow-automation-engine/app/services/llm_service.py) — mock/model boundary, extraction and routing.
+5. [Project 05 screener](05-sme-automation-opportunity-screen/screener.py) and [tests](05-sme-automation-opportunity-screen/tests/test_screener.py) — explicit economic assumptions and human decision gates before any automation pilot.
 
 ## Architecture: separation of concerns
 
@@ -27,6 +30,7 @@
 02  Operational text -> extraction -> routing -> mock actions / KPI
 03  Structured model output -> gate -> allow OR human review -> mock dispatch
 04  Synthetic runbooks -> chunks -> embeddings -> pgvector -> cited retrieval / abstain
+05  Synthetic SME processes -> cost/time assumptions -> economic screen + human review
 ```
 
 These modules are **standalone**, not a single distributed production pipeline. The Project 03 schema deliberately matches fields used by Project 02, but wiring them together is not claimed.
@@ -51,9 +55,13 @@ python -m pytest -q
 cd ../04-rag-knowledge-hub
 pip install -r requirements.txt
 python -m pytest -q
+
+cd ../05-sme-automation-opportunity-screen
+python -m unittest discover -s tests -v
+python screener.py --input samples/synthetic_opportunities.csv
 ```
 
-GitHub Actions [portfolio tests](.github/workflows/ci.yml) runs each module plus JSON/Python/shell checks and Docker Compose **syntax validation** on push/PR. A passing unit suite or syntax check does not prove that a live n8n instance, Docker image or external integration ran.
+GitHub Actions [portfolio tests](.github/workflows/ci.yml) runs Projects 01–04 plus Project 05 standalone tests, JSON/Python/shell checks, and Docker Compose **syntax validation** on push/PR. A passing unit suite or syntax check does not prove that a live n8n instance, Docker image or external integration ran.
 
 For individual Docker demos, start from the project directory: copy `.env.example` to `.env`, replace secret placeholders, then run `docker compose up --build`. Projects 01/02 both use ports 5678 and 8000 and should not be started simultaneously without changing ports. Project 03 defaults to 5679 and 8030; Project 04 to 5680 and 8040. See individual READMEs for prerequisites.
 
@@ -67,3 +75,5 @@ For individual Docker demos, start from the project directory: copy `.env.exampl
 License: [LICENSE](LICENSE).
 
 **Project 04 boundary:** The default embedding is lexical feature hashing, **not** a semantic transformer. Hosted semantic embeddings and answer generation are optional and do not form part of the offline test evidence. Documents are persisted as raw text and must be synthetic or explicitly approved for processing.
+
+**Project 05 boundary:** all company names, case volumes, labor rates and savings assumptions are synthetic; the screening model is not an LLM, measured operational ROI or a substitute for deal diligence and human approval.
