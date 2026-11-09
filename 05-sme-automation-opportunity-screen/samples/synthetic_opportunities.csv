@@ -1,0 +1,5 @@
+opportunity_id,company,process,cases_per_month,manual_minutes,automated_minutes,automatable_share,loaded_hourly_cost_eur,setup_cost_eur,monthly_running_cost_eur,data_classification,systems_access_confirmed,process_owner_approved
+SYN-001,Fictional Joinery,Quote request intake,160,12,4,0.75,32,1200,40,low,yes,yes
+SYN-002,Fictional Sign Shop,Invoice data entry,400,6,2,0.80,30,2700,80,medium,yes,yes
+SYN-003,Fictional Fence Supplier,Customer complaint triage,80,15,6,0.60,33,1100,35,high,no,no
+SYN-004,Fictional Distributor,Inventory exception email,40,7,6,0.50,28,2500,90,low,yes,yes
